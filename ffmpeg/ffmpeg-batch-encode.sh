@@ -33,7 +33,7 @@ if [ ! -d "$DIRECTORY/output" ]; then
 fi
 
 # Encode each file in the directory with different CRF setting based on resolution
-for FILE in "$DIRECTORY"/*; do
+for FILE in "$DIRECTORY"/*.*; do
     RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 "$FILE")
     FILENAME=$(basename "$FILE")
         if [[ $RES -gt 1920 ]]; then

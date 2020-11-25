@@ -45,10 +45,13 @@ folder_encode () {
         FILENAME=$(basename "$FILE")
             if [[ $RES -gt 1920 ]]; then
                 echo "File is 4K or higher, encoding using CRF $QUALITY_4K"
-                ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_4K" -c:a copy "$INPUT_SOURCE"/output/"$FILENAME"
-            elif [[ $RES -le 1920 ]]; then
+                ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_4K" -c:a copy "$INPUT_SOURCE"/output/"$FILENAME" ||  echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
+            elif [[ $RES -le 1920 ]] && [[ -n $RES ]]; then
                 echo "File is HD or lower, encoding using CRF $QUALITY_HD"
-                ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" -c:a copy "$INPUT_SOURCE"/output/"$FILENAME"
+                ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" -c:a copy "$INPUT_SOURCE"/output/"$FILENAME" ||  echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
+            else
+                echo "ERROR Line $LINENO: Source file $FILE is not a valid video file" 1>&2
+                echo "Skipping..."
             fi
     done
 }
@@ -63,9 +66,13 @@ file_encode () {
     FILENAME=$(basename "$INPUT_SOURCE")
     RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 "$INPUT_SOURCE")
         if [[ $RES -gt 1920 ]]; then
-            ffmpeg -i "$INPUT_SOURCE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_4K" -c:a copy "$FILEDIR"/output/"$FILENAME"
-        elif [[ $RES -le 1920 ]]; then
-            ffmpeg -i "$INPUT_SOURCE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" -c:a copy "$FILEDIR"/output/"$FILENAME"
+            echo "File is 4K or higher, encoding using CRF $QUALITY_4K"
+            ffmpeg -i "$INPUT_SOURCE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_4K" -c:a copy "$FILEDIR"/output/"$FILENAME" || echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
+        elif [[ $RES -le 1920 ]] && [[ -n $RES ]]; then
+            echo "File is HD or lower, encoding using CRF $QUALITY_HD"
+            ffmpeg -i "$INPUT_SOURCE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" -c:a copy "$FILEDIR"/output/"$FILENAME" || echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
+        else
+            echo "ERROR Line $LINENO: Source file $INPUT_SOURCE is not a valid video file" 1>&2
         fi
 }
 
@@ -86,6 +93,8 @@ elif [ -d "$1" ]; then
 else
     error_exit "$LINENO: Not a valid source" 1>&2
 fi
+
+echo "File(s) encoded successfully!"
 
 exit 0
 

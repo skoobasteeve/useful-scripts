@@ -48,7 +48,7 @@ folder_encode () {
                 ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_4K" -maxrate 25M -bufsize 25M -c:a copy "$INPUT_SOURCE"/output/"$FILENAME" ||  echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
             elif [[ $RES -le 1920 ]] && [[ -n $RES ]]; then
                 echo "File is HD or lower, encoding using CRF $QUALITY_HD"
-                ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" 15M -bufsize 15M -c:a copy "$INPUT_SOURCE"/output/"$FILENAME" ||  echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
+                ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" -maxrate 15M -bufsize 15M -c:a copy "$INPUT_SOURCE"/output/"$FILENAME" ||  echo "ERROR Line $LINENO: File not encoded, unknown error occurred." 1>&2
             else
                 echo "ERROR Line $LINENO: Source file $FILE is not a valid video file" 1>&2
                 echo "Skipping..."

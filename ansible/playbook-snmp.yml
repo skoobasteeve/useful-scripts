@@ -1,5 +1,5 @@
 ---
-# Expects snmp.conf in same directory
+# Expects snmpd.conf in same directory
 - name: configure snmp
   hosts: active
   remote_user: 

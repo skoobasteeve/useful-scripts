@@ -34,6 +34,7 @@ NEXTCLOUD_URL = ""
 
 #### DON'T EDIT BELOW THIS LINE ####
 
+# Netlify API calls
 headers = {'Authorization': 'Bearer ' + OAUTH_TOKEN , 'User-Agent': 'MyApp (' + USERNAME + ')'}
 form_submissions = requests.get(f"https://api.netlify.com/api/v1/sites/{SITE_ID}/forms/{FORM_ID}/submissions", headers=headers).json()
 vaccine_cards = {}
@@ -49,12 +50,14 @@ all_cards = []
 
 #### FUNCTIONS ####
 
+# Creates a dictionary from the Netlify form data { "Name": "<file_url>" }
 def build_dict():
     for entry in form_submissions:
         name = entry["data"]["name"]
         card_img = entry["data"]["vaccine_card"]["url"]
         vaccine_cards[name] = card_img
 
+# Downloads files from Netlify based on their URL and renames the files as "First_Last.jpg(png, pdf, etc)"
 def download_cards():
     print("Downloading cards from Netlify...")
     for name, card in vaccine_cards.items():
@@ -75,7 +78,8 @@ def download_cards():
                     f.write(chunk)
         else:
             continue
-    
+
+# Uploads files to the specified Nextcloud/WebDAV folder if they don't already exist
 def upload_cards():
     num_cards = len(new_cards)
     current_card = 0

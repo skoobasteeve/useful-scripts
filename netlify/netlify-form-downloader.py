@@ -44,25 +44,44 @@ webdav_options = {
  'webdav_password': NEXTCLOUD_PASS
 }
 client = Client(webdav_options)
-existing_cards = client.list(NEXTCLOUD_DIR)
+nc = client.list(NEXTCLOUD_DIR)
+existing_cards = nc[1:]
 new_cards = []
 all_cards = []
 
 #### FUNCTIONS ####
 
-# Creates a dictionary from the Netlify form data { "Name": "<file_url>" }
 def build_dict():
     for entry in form_submissions:
         name = entry["data"]["name"]
         card_img = entry["data"]["vaccine_card"]["url"]
         vaccine_cards[name] = card_img
 
-# Downloads files from Netlify based on their URL and renames the files as "First_Last.jpg(png, pdf, etc)"
+def card_sizes_netlify():
+    netlify_cards = {}
+    for name, card in vaccine_cards.items():
+        response = urllib.request.urlopen(card)
+        info = response.headers
+        filesize = info['Content-Length']
+        extension = "." + str(info.get_content_subtype())
+        name_clean = name.strip()
+        output_file = name_clean.replace(' ', '_') + extension
+        netlify_cards[output_file] = filesize
+    return netlify_cards
+
+def card_sizes_nextcloud():
+    nextcloud_cards = {}
+    for card in existing_cards:
+        card_info = client.info(NEXTCLOUD_DIR + card)
+        filesize = card_info['size']
+        nextcloud_cards[card] = filesize
+    return nextcloud_cards
+
 def download_cards():
     print("Downloading cards from Netlify...")
     for name, card in vaccine_cards.items():
         response = urllib.request.urlopen(card)
-        info = response.info()
+        info = response.headers
         extension = "." + str(info.get_content_subtype())
         name_clean = name.strip()
         output_file = name_clean.replace(' ', '_') + extension
@@ -78,8 +97,7 @@ def download_cards():
                     f.write(chunk)
         else:
             continue
-
-# Uploads files to the specified Nextcloud/WebDAV folder if they don't already exist
+    
 def upload_cards():
     num_cards = len(new_cards)
     current_card = 0
@@ -96,7 +114,8 @@ def upload_cards():
 
 def main():
     build_dict()
-    if len(vaccine_cards) > (len(existing_cards) - 1):
+    print("Checking for new vaccine cards...")
+    if card_sizes_netlify() != card_sizes_nextcloud():
         download_cards()
     else:
         print("Nothing new to download!")

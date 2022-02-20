@@ -27,18 +27,14 @@ movie_safe = urllib.parse.quote_plus(movie)
 tmdb_search = requests.get(f"{tmdb_url}/search/movie?language=en-US&query={movie_safe}&page=1&include_adult=false", headers=tmdb_headers).json()
 movie_id = tmdb_search['results'][0]['id']
 movie_tile = tmdb_search['results'][0]['title']
-movie_release = tmdb_search['results'][0]['release_date']
+movie_release = datetime.strptime(tmdb_search['results'][0]['release_date'], "%Y-%m-%d")
 
 sa_querystring = {"country":"us","tmdb_id":f"movie/{movie_id}","output_language":"en"}
-
-
-
 sa_response = requests.request("GET", sa_url, headers=sa_headers, params=sa_querystring).json()
 
-services_list = []
 services = sa_response["streamingInfo"]
 
-print(movie_tile + f" ({movie_release})")
+print(movie_tile + f" ({movie_release.year})")
 for s in services:
     countries = sa_response["streamingInfo"][s]
     for c in countries:
@@ -49,24 +45,3 @@ for s in services:
         if leaving_epoch != 0:
             print(f"Will be leaving {s} on {leaving_date}")
         print(f"Watch here: {link}")
-# country = response["streamingInfo"][services]
-# leaving = response["streamingInfo"][services]["leaving"]
-# link = response["streamingInfo"][services]["link"]
-
-#print(services)
-
-
-# changes = {}
-# for x in services:
-#     changes[x] = response["streamingInfo"][x][x]['leaving']
-# print(changes)
-
-
-# for s in services:
-#     services_list.append(s)
-
-# print(services_list)
-
-# for s in services['hulu']:
-#     print(s)
-#print(json.dumps(response, indent=4, sort_keys=True))

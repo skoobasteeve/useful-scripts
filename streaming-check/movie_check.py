@@ -21,7 +21,7 @@ sa_headers = {
     'x-rapidapi-key': sa_api_token
     }
 
-movie = "eternals"
+movie = input("Enter a movie: ")
 movie_safe = urllib.parse.quote_plus(movie)
 
 tmdb_search = requests.get(f"{tmdb_url}/search/movie?language=en-US&query={movie_safe}&page=1&include_adult=false", headers=tmdb_headers).json()
@@ -61,7 +61,7 @@ def services_speller(service):
 print(movie_tile + f" ({movie_release.year})")
 print(f"Rating: {movie_rating}")
 if not services:
-    print("Movie not available for streaming :(")
+    print("Streaming not available :(")
 for s in services:
     countries = sa_response["streamingInfo"][s]
     for c in countries:

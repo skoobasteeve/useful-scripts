@@ -4,7 +4,6 @@ import requests
 import urllib
 from datetime import datetime
 import os
-import sys
 
 tmdb_api_token = os.environ.get("TMDB_API_TOKEN")
 sa_api_token = os.environ.get("SA_API_TOKEN")
@@ -22,7 +21,7 @@ sa_headers = {
     'x-rapidapi-key': sa_api_token
     }
 
-movie = "finch"
+movie = "eternals"
 movie_safe = urllib.parse.quote_plus(movie)
 
 tmdb_search = requests.get(f"{tmdb_url}/search/movie?language=en-US&query={movie_safe}&page=1&include_adult=false", headers=tmdb_headers).json()
@@ -34,6 +33,8 @@ if not tmdb_search["results"]:
 movie_id = tmdb_search['results'][0]['id']
 movie_tile = tmdb_search['results'][0]['title']
 movie_release = datetime.strptime(tmdb_search['results'][0]['release_date'], "%Y-%m-%d")
+movie_rating = tmdb_search['results'][0]['vote_average']
+
 
 sa_querystring = {"country":"us","tmdb_id":f"movie/{movie_id}","output_language":"en"}
 sa_response = requests.request("GET", sa_url, headers=sa_headers, params=sa_querystring).json()
@@ -58,6 +59,7 @@ def services_speller(service):
     
 
 print(movie_tile + f" ({movie_release.year})")
+print(f"Rating: {movie_rating}")
 if not services:
     print("Movie not available for streaming :(")
 for s in services:

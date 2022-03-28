@@ -111,7 +111,8 @@ def main():
     args = get_args()
     movie = input("Enter a movie: ")
 
-    movie_id, movie_title, movie_release, movie_rating = tmdb_lookup(tmdb_url, tmdb_headers, movie, args)
+    movie_id, movie_title, movie_release, movie_rating = tmdb_lookup(
+                                        tmdb_url, tmdb_headers, movie, args)
 
     print(movie_title + f" ({movie_release.year})")
     print(f"Rating: {movie_rating}\n")

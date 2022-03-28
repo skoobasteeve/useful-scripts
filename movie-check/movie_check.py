@@ -116,6 +116,7 @@ def main():
                                         tmdb_url, tmdb_headers, movie, args)
 
     print(f"\n{movie_title} ({movie_release})")
+    print(f"https://themoviedb.org/movie/{movie_id}")
     print(f"Rating: {movie_rating}\n")
 
     sa_response, services = sa_lookup(sa_url, sa_headers, movie_id)

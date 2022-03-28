@@ -102,6 +102,10 @@ def services_speller(service):
         service_proper = "Apple TV+"
     elif service == "paramount":
         service_proper = "Paramount+"
+    elif service == "starz":
+        service_proper = "STARZ"
+    elif service == "showtime":
+        service_proper = "Showtime"
     else:
         return service
     return service_proper

@@ -57,12 +57,13 @@ def tmdb_lookup(tmdb_url, tmdb_headers, movie, args):
     if movie_release_check:
         movie_release = datetime.strptime(
             tmdb_search['results'][0]['release_date'], "%Y-%m-%d")
+        movie_year = movie_release.year
     else:
-        movie_release = "???"
+        movie_year = "???"
 
     movie_rating = tmdb_search['results'][0]['vote_average']
 
-    return movie_id, movie_title, movie_release, movie_rating
+    return movie_id, movie_title, movie_year, movie_rating
 
 
 def sa_lookup(sa_url, sa_headers, movie_id):
@@ -76,7 +77,7 @@ def sa_lookup(sa_url, sa_headers, movie_id):
                                   params=sa_params)
 
     if sa_request.status_code == 404:
-        print("I'm having trouble finding that movie. " +
+        print("I'm having trouble finding that movie on streaming. " +
               "Check your spelling and try again.")
         exit()
 
@@ -114,7 +115,7 @@ def main():
     movie_id, movie_title, movie_release, movie_rating = tmdb_lookup(
                                         tmdb_url, tmdb_headers, movie, args)
 
-    print(movie_title + f" ({movie_release.year})")
+    print(f"\n{movie_title} ({movie_release})")
     print(f"Rating: {movie_rating}\n")
 
     sa_response, services = sa_lookup(sa_url, sa_headers, movie_id)

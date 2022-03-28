@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import requests
-import urllib
 from datetime import datetime
 import os
 import argparse
@@ -25,16 +24,30 @@ sa_headers = {
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Search movie streaming availability.')
+    parser = argparse.ArgumentParser(
+        description='Search movie streaming availability.')
+
     parser.add_argument('--year', type=int, help='Specify movie release year')
     return parser.parse_args()
 
 
-def tmdb_lookup(tmdb_url, tmdb_headers, tmdb_params):
-    tmdb_search = requests.get(f"{tmdb_url}/search/movie", params=tmdb_params, headers=tmdb_headers).json()
+def tmdb_lookup(tmdb_url, tmdb_headers, movie, args):
+    tmdb_params = {
+        "language": "en-US",
+        "query": movie,
+        "page": 1,
+        "include_adult": False
+    }
+
+    if args.year:
+        tmdb_params["primary_release_year"] = args.year
+
+    tmdb_search = requests.get(f"{tmdb_url}/search/movie", params=tmdb_params,
+                               headers=tmdb_headers).json()
 
     if not tmdb_search["results"]:
-        print("I'm having trouble finding that movie. Check your spelling and try again.")
+        print("I'm having trouble finding that movie. " +
+              "Check your spelling and try again.")
         exit()
 
     movie_id = tmdb_search['results'][0]['id']
@@ -42,21 +55,29 @@ def tmdb_lookup(tmdb_url, tmdb_headers, tmdb_params):
     movie_release_check = tmdb_search['results'][0]['release_date']
 
     if movie_release_check:
-        movie_release = datetime.strptime(tmdb_search['results'][0]['release_date'], "%Y-%m-%d")
-    else: movie_release = "???"
+        movie_release = datetime.strptime(
+            tmdb_search['results'][0]['release_date'], "%Y-%m-%d")
+    else:
+        movie_release = "???"
 
     movie_rating = tmdb_search['results'][0]['vote_average']
 
-    return movie_id,movie_title,movie_release,movie_rating
+    return movie_id, movie_title, movie_release, movie_rating
 
 
 def sa_lookup(sa_url, sa_headers, movie_id):
-    sa_querystring = {"country":"us","tmdb_id":f"movie/{movie_id}","output_language":"en"}
-    sa_request = requests.request("GET", sa_url, headers=sa_headers, params=sa_querystring)
+    sa_params = {
+        "country": "us",
+        "tmdb_id": f"movie/{movie_id}",
+        "output_language": "en"
+        }
 
+    sa_request = requests.request("GET", sa_url, headers=sa_headers,
+                                  params=sa_params)
 
     if sa_request.status_code == 404:
-        print("I'm having trouble finding that movie. Check your spelling and try again.")
+        print("I'm having trouble finding that movie. " +
+              "Check your spelling and try again.")
         exit()
 
     sa_response = sa_request.json()
@@ -89,19 +110,8 @@ def main():
 
     args = get_args()
     movie = input("Enter a movie: ")
-    movie_safe = urllib.parse.quote_plus(movie)
 
-    tmdb_params = {
-        "language": "en-US",
-        "query": movie_safe,
-        "page": 1,
-        "include_adult": False
-    }
-
-    if args.year:
-        tmdb_params["primary_release_year"] = args.year 
-
-    movie_id, movie_title, movie_release, movie_rating = tmdb_lookup(tmdb_url, tmdb_headers, tmdb_params)
+    movie_id, movie_title, movie_release, movie_rating = tmdb_lookup(tmdb_url, tmdb_headers, movie, args)
 
     print(movie_title + f" ({movie_release.year})")
     print(f"Rating: {movie_rating}\n")
@@ -110,10 +120,11 @@ def main():
 
     if not services:
         print("Streaming not available :(")
-    
+
     for s in services:
         leaving_epoch = sa_response["streamingInfo"][s]["us"]["leaving"]
-        leaving_date = datetime.fromtimestamp(int(leaving_epoch)).strftime('%Y-%m-%d')
+        leaving_date = datetime.fromtimestamp(
+            int(leaving_epoch)).strftime('%Y-%m-%d')
         link = sa_response["streamingInfo"][s]["us"]["link"]
 
         print(f"Available on {services_speller(s)}")
@@ -122,6 +133,7 @@ def main():
             print(f"Will be leaving on {leaving_date}")
 
         print(f"Watch here: {link}\n")
+
 
 if __name__ == "__main__":
     main()

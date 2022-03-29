@@ -23,15 +23,15 @@ sa_headers = {
     }
 
 
-def get_args():
-    parser = argparse.ArgumentParser(
-        description='Search movie streaming availability.')
+# def get_args():
+#     parser = argparse.ArgumentParser(
+#         description='Search movie streaming availability.')
 
-    parser.add_argument('--year', type=int, help='Specify movie release year')
-    return parser.parse_args()
+#     parser.add_argument('--year', type=int, help='Specify movie release year')
+#     return parser.parse_args()
 
 
-def tmdb_lookup(tmdb_url, tmdb_headers, movie, args):
+def tmdb_lookup(tmdb_url, tmdb_headers, movie):
     tmdb_params = {
         "language": "en-US",
         "query": movie,
@@ -39,8 +39,8 @@ def tmdb_lookup(tmdb_url, tmdb_headers, movie, args):
         "include_adult": False
     }
 
-    if args.year:
-        tmdb_params["primary_release_year"] = args.year
+    # if args.year:
+    #     tmdb_params["primary_release_year"] = args.year
 
     tmdb_search = requests.get(f"{tmdb_url}/search/movie", params=tmdb_params,
                                headers=tmdb_headers).json()
@@ -113,8 +113,8 @@ def services_speller(service):
 
 def main():
 
-    args = get_args()
-    movie = input("Enter a movie: ")
+    #args = get_args()
+    #movie = input("Enter a movie: ")
 
     movie_id, movie_title, movie_release, movie_rating = tmdb_lookup(
                                         tmdb_url, tmdb_headers, movie, args)
@@ -142,5 +142,3 @@ def main():
         print(f"Watch here: {link}\n")
 
 
-if __name__ == "__main__":
-    main()

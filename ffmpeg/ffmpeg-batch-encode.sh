@@ -94,23 +94,7 @@ else
     error_exit "$LINENO: Not a valid source" 1>&2
 fi
 
-<<<<<<< HEAD
 echo "File(s) encoded successfully!"
 
 exit 0
-
-=======
-# Encode each file in the directory with different CRF setting based on resolution
-for FILE in "$DIRECTORY"/*.*; do
-    RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 "$FILE")
-    FILENAME=$(basename "$FILE")
-        if [[ $RES -gt 1920 ]]; then
-            ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_4K" -c:a copy "$DIRECTORY"/output/"$FILENAME"
-        elif [[ $RES -le 1920 ]]; then
-            ffmpeg -i "$FILE" -c:v libx264 -preset slow -tune film -crf "$QUALITY_HD" -c:a copy "$DIRECTORY"/output/"$FILENAME"
-        else
-            echo "$FILENAME is not a valid filetype"
-        fi
-done
->>>>>>> main
 

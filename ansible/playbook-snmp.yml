@@ -1,0 +1,150 @@
+---
+# Expects snmpd.conf and snmpd_arm.conf in same directory
+- name: configure snmp
+  hosts: active
+  remote_user: raylyon
+  become: yes
+  vars:
+    pihole01_key: ""
+    pihole02_key: ""
+
+  tasks:
+  - name: get service facts
+    service_facts:
+  - name: get package facts
+    ansible.builtin.package_facts:
+      manager: auto
+  - name: check for pihole
+    ansible.builtin.stat:
+      path: "/usr/local/bin/pihole"
+    register: pihole
+  - name: install latest snmpd - debian
+    package: name=snmpd state=latest
+    when: ansible_os_family == "Debian"
+  - name: install latest snmpd - centos
+    package: name=net-snmp state=latest
+    when: ansible_os_family == "RedHat"
+  - name: install latest jq
+    package: name=jq state=latest
+  - name: copy snmpd config x86
+    copy:
+      src: snmpd.conf
+      dest: "/etc/snmp/snmpd.conf"
+    when: ansible_architecture == "x86_64"
+  - name: copy snmpd config arm
+    copy:
+      src: snmpd_arm.conf
+      dest: "/etc/snmp/snmpd.conf"
+    when: ansible_architecture == "armv6l"
+  - name: fix extend serial permissions
+    ansible.builtin.file:
+      path: "/sys/devices/virtual/dmi/id/product_serial"
+      mode: '444'
+    when: ansible_architecture == "x86_64"
+  - name: cron job for extend serial permissions
+    ansible.builtin.lineinfile:
+      path: /etc/crontab
+      line: "@reboot chmod 444 /sys/devices/virtual/dmi/id/product_serial"
+    when: ansible_architecture == "x86_64"
+  - name: download script for extend distro
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/distro"
+      dest: "/usr/bin/distro"
+      mode: '755'
+  - name: download script for extend osupdates
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/osupdate"
+      dest: "/etc/snmp/osupdate"
+      mode: '755'
+  - name: download script for extend zfs
+    ansible.builtin.get_url:
+      url: "https://github.com/librenms/librenms-agent/raw/master/snmp/zfs-linux"
+      dest: "/etc/snmp/zfs-linux"
+      mode: '755'
+    when: "'zfs-zed' in ansible_facts.packages"
+  - name: download script for extend docker
+    ansible.builtin.get_url:
+      url: "https://github.com/librenms/librenms-agent/raw/master/snmp/docker-stats.sh"
+      dest: "/etc/snmp/docker-stats.sh"
+      mode: '755'
+    when: "'docker' in services"
+  - name: download script for extend pihole
+    ansible.builtin.get_url:
+      url: "https://github.com/librenms/librenms-agent/raw/master/snmp/pi-hole"
+      dest: "/etc/snmp/pi-hole"
+      mode: '755'
+    when: pihole.stat.exists
+  - name: add api key to pihole script for pihole01
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/pi-hole"
+      regexp: '^API_AUTH_KEY='
+      line: 'API_AUTH_KEY="{{ pihole01_key }}"'
+      backrefs: yes
+    when: ansible_hostname == "pihole01"
+  - name: add api key to pihole script for pihole02
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/pi-hole"
+      regexp: '^API_AUTH_KEY='
+      line: 'API_AUTH_KEY="{{ pihole02_key }}"'
+      backrefs: yes
+    when: ansible_hostname == "pihole02"
+  - name: enable extend nfs-server
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/snmpd.conf"
+      line: "extend nfs-server /bin/cat /proc/net/rpc/nfsd"
+    when: "'nfs-kernel-server' in ansible_facts.services"
+  - name: enable extend zfs
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/snmpd.conf"
+      line: "extend zfs '/usr/bin/sudo /etc/snmp/zfs-linux'"
+    when: "'zfs-zed' in ansible_facts.packages"
+  - name: update sudoers file for extend zfs
+    ansible.builtin.lineinfile:
+      path: "/etc/sudoers"
+      line: "Debian-snmp ALL=(ALL) NOPASSWD: /etc/snmp/zfs-linux"
+    when: "'zfs-zed' in ansible_facts.packages"
+  - name: enable extend docker
+    when: "'docker' in services"
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/snmpd.conf"
+      line: "extend docker /usr/bin/sudo /etc/snmp/docker-stats.sh"
+  - name: enable extend pihole
+    when: pihole.stat.exists
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/snmpd.conf"
+      line: "extend pi-hole /etc/snmp/pi-hole"
+  - name: update sudoers file for extend docker
+    when: "'docker' in services"
+    ansible.builtin.lineinfile:
+      path: "/etc/sudoers"
+      line: "Debian-snmp ALL=(ALL) NOPASSWD: /etc/snmp/docker-stats.sh"
+  - name: enable extend osupdates
+    ansible.builtin.lineinfile:
+      path: "/etc/snmp/snmpd.conf"
+      line: "extend osupdate /etc/snmp/osupdate"
+  - name: set ExecStart options in service file - ubuntu
+    ansible.builtin.lineinfile:
+      path: "/lib/systemd/system/snmpd.service"
+      regexp: '^ExecStart='
+      line: "ExecStart=/usr/sbin/snmpd -LS4d -Lf /dev/null -u Debian-snmp -g Debian-snmp -I -smux,mteTrigger,mteTriggerConf -f"
+      backrefs: yes
+    when: ansible_os_family == "Debian"
+  - name: reload systemd configs - ubuntu
+    ansible.builtin.systemd:
+      daemon_reload: yes
+    when: ansible_os_family == "Debian"
+  - name: set snmpdopts - centos
+    ansible.builtin.lineinfile:
+      path: "/etc/sysconfig/snmpd"
+      regexp: '^# OPTIONS=|^OPTIONS='
+      line: 'OPTIONS="-LS4-6d"'
+    when: ansible_os_family == "RedHat"
+  - name: enable and restart snmpd.service
+    ansible.builtin.systemd:
+      state: restarted
+      enabled: yes
+      name: snmpd
+  - name: verify the snmpd service is running
+    ansible.builtin.systemd:
+      state: started
+      name: snmpd
